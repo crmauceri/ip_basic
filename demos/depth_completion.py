@@ -11,40 +11,34 @@ from ip_basic import depth_map_utils
 from ip_basic import vis_utils
 
 
-def main():
-    """Depth maps are saved to the 'outputs' folder.
+def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, subsample=0.05):
+    """Depth maps are saved to the 'output_depth_dir' folder.
     """
 
     ##############################
     # Options
     ##############################
-    # Validation set
-    input_depth_dir = os.path.expanduser(
-        '~/Kitti/depth/depth_selection/val_selection_cropped/velodyne_raw')
-    data_split = 'val'
-
-    # Test set
-    # input_depth_dir = os.path.expanduser(
-    #     '~/Kitti/depth/depth_selection/test_depth_completion_anonymous/velodyne_raw')
-    # data_split = 'test'
 
     # Fast fill with Gaussian blur @90Hz (paper result)
-    fill_type = 'fast'
-    extrapolate = True
-    blur_type = 'gaussian'
+    if mode == "gaussian":
+        fill_type = 'fast'
+        extrapolate = True
+        blur_type = 'gaussian'
 
     # Fast Fill with bilateral blur, no extrapolation @87Hz (recommended)
-    # fill_type = 'fast'
-    # extrapolate = False
-    # blur_type = 'bilateral'
+    elif mode == "fast_bilateral":
+        fill_type = 'fast'
+        extrapolate = False
+        blur_type = 'bilateral'
 
     # Multi-scale dilations with extra noise removal, no extrapolation @ 30Hz
-    # fill_type = 'multiscale'
-    # extrapolate = False
-    # blur_type = 'bilateral'
+    elif mode == "multiscale_bilateral":
+        fill_type = 'multiscale'
+        extrapolate = False
+        blur_type = 'bilateral'
 
-    # Save output to disk or show process
-    save_output = True
+    else:
+        raise ValueError("Mode not implemented: " + mode)
 
     ##############################
     # Processing
@@ -62,25 +56,6 @@ def main():
         save_depth_maps = False
 
     # Create output folder
-    this_file_path = os.path.dirname(os.path.realpath(__file__))
-    outputs_dir = this_file_path + '/outputs'
-    os.makedirs(outputs_dir, exist_ok=True)
-
-    output_folder_prefix = 'depth_' + data_split
-    output_list = sorted(os.listdir(outputs_dir))
-    if len(output_list) > 0:
-        split_folders = [folder for folder in output_list
-                         if folder.startswith(output_folder_prefix)]
-        if len(split_folders) > 0:
-            last_output_folder = split_folders[-1]
-            last_output_index = int(last_output_folder.split('_')[-1])
-        else:
-            last_output_index = -1
-    else:
-        last_output_index = -1
-    output_depth_dir = outputs_dir + '/{}_{:03d}'.format(
-        output_folder_prefix, last_output_index + 1)
-
     if save_output:
         if not os.path.exists(output_depth_dir):
             os.makedirs(output_depth_dir)
@@ -120,6 +95,12 @@ def main():
         # Load depth projections from uint16 image
         depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
         projected_depths = np.float32(depth_image / 256.0)
+
+        # Simulate sparse depth
+        if subsample < 1.0:
+            n = projected_depths.shape[0]*projected_depths.shape[1]
+            index = np.random.choice(n, np.floor(n*subsample), replace=False)
+            projected_depths[index] = 0.0
 
         # Fill in
         start_fill_time = time.time()
@@ -198,4 +179,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="""
+        Depth completion for all sparse depth images in directory. 
+        """)
+    parser.add_argument("input_dir", help="Path to sparse depth images")
+    parser.add_argument("output_dir", help="Path to output dir")
+    parser.add_argument("mode", help="Upsampling mode: (gaussian, fast_bilateral, multiscale_bilateral)", default="fast_bilateral")
+    args = parser.parse_args()
+
+    main(args.input_dir, args.output_dir, args.mode)
