@@ -8,4 +8,6 @@ def cityscapes_disparity_to_depth(disparity_path):
     disparity_arr[disparity_arr > 0] = (disparity_arr[disparity_arr > 0] - 1.0) / 256.
     depth_arr = np.zeros(disparity_arr.shape)
     depth_arr[disparity_arr > 0] = 0.2 * 2262 / disparity_arr[disparity_arr > 0]
+    depth_arr = np.astype(np.uint8)
+    
     return depth_arr
