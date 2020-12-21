@@ -98,9 +98,9 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
 
         # Simulate sparse depth
         if subsample < 1.0:
-            n = projected_depths.shape[0]*projected_depths.shape[1]
-            index = np.random.choice(n, np.floor(n*subsample), replace=False)
-            projected_depths[index] = 0.0
+            n = int(projected_depths.shape[0] * projected_depths.shape[1])
+            index = np.random.choice(n, int(np.floor(n * subsample)), replace=False)
+            projected_depths.flat[index] = 0
 
         # Fill in
         start_fill_time = time.time()
