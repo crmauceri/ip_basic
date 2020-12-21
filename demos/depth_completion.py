@@ -9,9 +9,10 @@ import png
 
 from ip_basic import depth_map_utils
 from ip_basic import vis_utils
+from ip_basic.depth_loader import cityscapes_disparity_to_depth
 
 
-def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, subsample=0.05):
+def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, subsample=0.05, dataset="cityscapes"):
     """Depth maps are saved to the 'output_depth_dir' folder.
     """
 
@@ -64,8 +65,11 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         print('Output dir:', output_depth_dir)
 
     # Get images in sorted order
-    images_to_use = sorted(glob.glob(input_depth_dir + '/*'))
-
+    if dataset == "cityscapes":
+        images_to_use = sorted(glob.glob(input_depth_dir + '/*/*/*.png'))
+    else:
+        images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
+        
     # Rolling average array of times for time estimation
     avg_time_arr_length = 10
     last_fill_times = np.repeat([1.0], avg_time_arr_length)
@@ -93,8 +97,11 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         start_total_time = time.time()
 
         # Load depth projections from uint16 image
-        depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
-        projected_depths = np.float32(depth_image / 256.0)
+        if dataset == "cityscapes":
+            projected_depths = cityscapes_disparity_to_depth(depth_image_path)
+        else:
+            depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
+            projected_depths = np.float32(depth_image / 256.0)
 
         # Simulate sparse depth
         if subsample < 1.0:
@@ -153,10 +160,9 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
 
         # Save depth images to disk
         if save_depth_maps:
-            depth_image_file_name = os.path.split(depth_image_path)[1]
-
             # Save depth map to a uint16 png (same format as disparity maps)
-            file_path = output_depth_dir + '/' + depth_image_file_name
+            file_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
+            print(file_path)
             with open(file_path, 'wb') as f:
                 depth_image = (final_depths * 256).astype(np.uint16)
 
