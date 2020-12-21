@@ -67,7 +67,7 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         if not os.path.exists(output_depth_dir):
             os.makedirs(output_depth_dir)
         else:
-            finished_images = set(glob.glob(output_depth_dir + '/*/*/*.png'))
+            finished_images = [x.replace(output_depth_dir, input_depth_dir) for x in glob.glob(output_depth_dir + '/*/*/*.png')]
             images_to_use = list(set(images_to_use).difference(finished_images))
         print('Output dir:', output_depth_dir)
 
