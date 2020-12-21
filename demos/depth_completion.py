@@ -163,8 +163,8 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
             # Save depth map to a uint16 png (same format as disparity maps)
             file_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
 
-            if not os.exists(os.path.basename(file_path)):
-                os.makedirs(os.path.basename(file_path))
+            if not os.path.exists(os.path.dirname(file_path)):
+                os.makedirs(os.path.dirname(file_path))
 
             with open(file_path, 'wb') as f:
                 depth_image = (final_depths * 256).astype(np.uint16)
