@@ -56,19 +56,20 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         show_process = True
         save_depth_maps = False
 
-    # Create output folder
-    if save_output:
-        if not os.path.exists(output_depth_dir):
-            os.makedirs(output_depth_dir)
-        else:
-            raise FileExistsError('Already exists!')
-        print('Output dir:', output_depth_dir)
-
     # Get images in sorted order
     if dataset == "cityscapes":
         images_to_use = sorted(glob.glob(input_depth_dir + '/*/*/*.png'))
     else:
         images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
+
+    # Create output folder
+    if save_output:
+        if not os.path.exists(output_depth_dir):
+            os.makedirs(output_depth_dir)
+        else:
+            finished_images = set(glob.glob(output_depth_dir + '/*/*/*.png'))
+            images_to_use = set(images_to_use).difference(finished_images)
+        print('Output dir:', output_depth_dir)
 
     # Rolling average array of times for time estimation
     avg_time_arr_length = 10
