@@ -69,7 +69,7 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         images_to_use = sorted(glob.glob(input_depth_dir + '/*/*/*.png'))
     else:
         images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
-        
+
     # Rolling average array of times for time estimation
     avg_time_arr_length = 10
     last_fill_times = np.repeat([1.0], avg_time_arr_length)
@@ -162,7 +162,10 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         if save_depth_maps:
             # Save depth map to a uint16 png (same format as disparity maps)
             file_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
-            print(file_path)
+
+            if not os.exists(os.path.basename(file_path)):
+                os.makedirs(os.path.basename(file_path))
+
             with open(file_path, 'wb') as f:
                 depth_image = (final_depths * 256).astype(np.uint16)
 
