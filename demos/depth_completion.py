@@ -68,7 +68,7 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
             os.makedirs(output_depth_dir)
         else:
             finished_images = set(glob.glob(output_depth_dir + '/*/*/*.png'))
-            images_to_use = set(images_to_use).difference(finished_images)
+            images_to_use = list(set(images_to_use).difference(finished_images))
         print('Output dir:', output_depth_dir)
 
     # Rolling average array of times for time estimation
