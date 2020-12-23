@@ -19,6 +19,7 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
     ##############################
     # Options
     ##############################
+    print("Mode: {}\nSave output: {}\nSubsample: {}\nDataset: {}".format(mode, save_output, subsample, dataset))
 
     # Fast fill with Gaussian blur @90Hz (paper result)
     if mode == "gaussian":
@@ -66,16 +67,9 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
     print("{} images found".format(len(images_to_use)))
 
-    # Create output folder
+    # Filter already processed images
     if save_output:
-        finished_images = []
-        if not os.path.exists(output_depth_dir):
-            os.makedirs(output_depth_dir)
-        elif dataset == "kitti":
-            img_dirs = set([os.path.dirname(x.replace('velodyne_raw', 'ip_complete')) for x in images_to_use])
-            for x in img_dirs:
-                if not os.path.exists(x):
-                    os.makedirs(x)
+        if dataset == "kitti":
             finished_images = [x.replace('velodyne_raw', 'ip_complete') for x in images_to_use if
                                os.path.exists(x.replace('velodyne_raw', 'ip_complete'))]
         else:
