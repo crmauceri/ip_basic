@@ -26,4 +26,5 @@ def kitti_depth_read(filename):
 
     depth = depth_png.astype(np.float) / 256.
     depth[depth_png == 0] = 0
-    return depth
+    depth_arr = depth.astype(np.uint8)
+    return depth_arr
