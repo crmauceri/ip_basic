@@ -62,7 +62,7 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
     if dataset == "cityscapes":
         images_to_use = sorted(glob.glob(input_depth_dir + '/*/*/*.png'))
     elif dataset == "kitti":
-        images_to_use = sorted(glob.glob(input_depth_dir +'*/*/proj_depth/velodyne_raw/image_*/*.png'))
+        images_to_use = sorted(glob.glob(input_depth_dir +'/*/*/proj_depth/velodyne_raw/image_*/*.png'))
     else:
         images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
     print("{} images found".format(len(images_to_use)))
