@@ -64,7 +64,7 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         images_to_use = sorted(glob.glob(input_depth_dir +'*/*/proj_depth/velodyne_raw/image_*/*.png'))
     else:
         images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
-    print("%d images found".format(len(images_to_use)))
+    print("{} images found".format(len(images_to_use)))
 
     # Create output folder
     if save_output:
@@ -83,7 +83,7 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
                                os.path.exists(x.replace(input_depth_dir, output_depth_dir))]
         images_to_use = list(set(images_to_use).difference(finished_images))
         print('Output dir:', output_depth_dir)
-        print("%d unprocessed images".format(len(images_to_use)))
+        print("{} unprocessed images".format(len(images_to_use)))
 
     # Rolling average array of times for time estimation
     avg_time_arr_length = 10
