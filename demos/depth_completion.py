@@ -9,7 +9,7 @@ import png
 
 from ip_basic import depth_map_utils
 from ip_basic import vis_utils
-from ip_basic.depth_loader import cityscapes_disparity_to_depth
+from ip_basic.depth_loader import cityscapes_disparity_to_depth, kitti_depth_read
 
 
 def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, subsample=0.05, dataset="cityscapes"):
@@ -59,6 +59,8 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
     # Get images in sorted order
     if dataset == "cityscapes":
         images_to_use = sorted(glob.glob(input_depth_dir + '/*/*/*.png'))
+    elif dataset == "kitti":
+        images_to_use = sorted(glob.glob(input_depth_dir +'*/*/proj_depth/velodyne_raw/image_*/*.png'))
     else:
         images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
 
@@ -67,7 +69,11 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         if not os.path.exists(output_depth_dir):
             os.makedirs(output_depth_dir)
         else:
-            finished_images = [x.replace(output_depth_dir, input_depth_dir) for x in glob.glob(output_depth_dir + '/*/*/*.png')]
+            if dataset == "kitti":
+                finished_images = [x.replace('velodyne_raw', 'ip_complete') for x in images_to_use if os.path.exists(x.replace('velodyne_raw', 'ip_complete'))]
+            else:
+                finished_images = [x for x in images_to_use if
+                                   os.path.exists(x.replace(input_depth_dir, output_depth_dir))]
             images_to_use = list(set(images_to_use).difference(finished_images))
         print('Output dir:', output_depth_dir)
 
@@ -100,6 +106,8 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         # Load depth projections from uint16 image
         if dataset == "cityscapes":
             projected_depths = cityscapes_disparity_to_depth(depth_image_path)
+        elif dataset == "kitti":
+            projected_depths = kitti_depth_read(depth_image_path)
         else:
             depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
             projected_depths = np.float32(depth_image / 256.0)
@@ -162,7 +170,10 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         # Save depth images to disk
         if save_depth_maps:
             # Save depth map to a uint16 png (same format as disparity maps)
-            file_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
+            if dataset == "kitti":
+                file_path = depth_image_path.replace('velodyne_raw', 'ip_complete')
+            else:
+                file_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
 
             if not os.path.exists(os.path.dirname(file_path)):
                 os.makedirs(os.path.dirname(file_path))
@@ -197,6 +208,8 @@ if __name__ == "__main__":
     parser.add_argument("input_dir", help="Path to sparse depth images")
     parser.add_argument("output_dir", help="Path to output dir")
     parser.add_argument("mode", help="Upsampling mode: (gaussian, fast_bilateral, multiscale_bilateral)", default="fast_bilateral")
+    parser.add_argument("--dataset", default='cityscapes', required=False,
+                        help="Name of dataset being processed [cityscapes, kitti, ...]")
     args = parser.parse_args()
 
-    main(args.input_dir, args.output_dir, args.mode)
+    main(args.input_dir, args.output_dir, args.mode, args.dataset)
