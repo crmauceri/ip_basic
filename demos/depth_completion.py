@@ -68,6 +68,7 @@ def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
         # Start timing
         start_total_time = time.time()
 
+        depth_image_path = images_to_use[i]
         if dataset == "kitti":
             output_depth_path = depth_image_path.replace('velodyne_raw', 'ip_complete')
         elif dataset == "cityscapes":
@@ -76,7 +77,6 @@ def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
             output_depth_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
 
         # Process the image
-        depth_image_path = images_to_use[i]
         start_fill_time, end_fill_time = complete_image(depth_image_path, output_depth_path,
                                                         fill_type, extrapolate, blur_type,
                                                         save_output, subsample, dataset)
