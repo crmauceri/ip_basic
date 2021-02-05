@@ -3,59 +3,25 @@ import os
 import sys
 import time
 
-import cv2
+import cv2, png
 import numpy as np
-import png
 
 from ip_basic import depth_map_utils
-from ip_basic import vis_utils
 from ip_basic.depth_loader import cityscapes_disparity_to_depth, kitti_depth_read
 
-
-def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, subsample=0.05, dataset="cityscapes"):
+def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
+        blur_type='gaussian', save_output=True, subsample=0.05, dataset="cityscapes"):
     """Depth maps are saved to the 'output_depth_dir' folder.
     """
 
     ##############################
     # Options
     ##############################
-    print("Mode: {}\nSave output: {}\nSubsample: {}\nDataset: {}".format(mode, save_output, subsample, dataset))
-
-    # Fast fill with Gaussian blur @90Hz (paper result)
-    if mode == "gaussian":
-        fill_type = 'fast'
-        extrapolate = True
-        blur_type = 'gaussian'
-
-    # Fast Fill with bilateral blur, no extrapolation @87Hz (recommended)
-    elif mode == "fast_bilateral":
-        fill_type = 'fast'
-        extrapolate = False
-        blur_type = 'bilateral'
-
-    # Multi-scale dilations with extra noise removal, no extrapolation @ 30Hz
-    elif mode == "multiscale_bilateral":
-        fill_type = 'multiscale'
-        extrapolate = False
-        blur_type = 'bilateral'
-
-    else:
-        raise ValueError("Mode not implemented: " + mode)
+    print("Save output: {}\nSubsample: {}\nDataset: {}".format(save_output, subsample, dataset))
 
     ##############################
     # Processing
     ##############################
-    if save_output:
-        # Save to Disk
-        show_process = False
-        save_depth_maps = True
-    else:
-        if fill_type == 'fast':
-            raise ValueError('"fast" fill does not support show_process')
-
-        # Show Process
-        show_process = True
-        save_depth_maps = False
 
     # Get images in sorted order
     print("Input dir: " + input_depth_dir)
@@ -86,9 +52,6 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
 
     num_images = len(images_to_use)
     for i in range(num_images):
-
-        depth_image_path = images_to_use[i]
-
         # Calculate average time with last n fill times
         avg_fill_time = np.mean(last_fill_times)
         avg_total_time = np.mean(last_total_times)
@@ -98,98 +61,23 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
                          'Avg Fill Time: {:.5f}s, '
                          'Avg Total Time: {:.5f}s, '
                          'Est Time Remaining: {:.3f}s'.format(
-                             i, num_images - 1, avg_fill_time, avg_total_time,
-                             avg_total_time * (num_images - i)))
+            i, num_images - 1, avg_fill_time, avg_total_time,
+               avg_total_time * (num_images - i)))
         sys.stdout.flush()
 
         # Start timing
         start_total_time = time.time()
 
-        # Load depth projections from uint16 image
-        if dataset == "cityscapes":
-            projected_depths = cityscapes_disparity_to_depth(depth_image_path)
-        elif dataset == "kitti":
-            projected_depths = kitti_depth_read(depth_image_path)
+        if dataset == "kitti":
+            output_depth_path = depth_image_path.replace('velodyne_raw', 'ip_complete')
         else:
-            depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
-            projected_depths = np.float32(depth_image / 256.0)
+            output_depth_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
 
-        # Simulate sparse depth
-        if subsample < 1.0:
-            n = int(projected_depths.shape[0] * projected_depths.shape[1])
-            index = np.random.choice(n, int(np.floor(n * subsample)), replace=False)
-            projected_depths.flat[index] = 0
-
-        # Fill in
-        start_fill_time = time.time()
-        if fill_type == 'fast':
-            final_depths = depth_map_utils.fill_in_fast(
-                projected_depths, extrapolate=extrapolate, blur_type=blur_type)
-        elif fill_type == 'multiscale':
-            final_depths, process_dict = depth_map_utils.fill_in_multiscale(
-                projected_depths, extrapolate=extrapolate, blur_type=blur_type,
-                show_process=show_process)
-        else:
-            raise ValueError('Invalid fill_type {}'.format(fill_type))
-        end_fill_time = time.time()
-
-        # Display images from process_dict
-        if fill_type == 'multiscale' and show_process:
-            img_size = (570, 165)
-
-            x_start = 80
-            y_start = 50
-            x_offset = img_size[0]
-            y_offset = img_size[1]
-            x_padding = 0
-            y_padding = 28
-
-            img_x = x_start
-            img_y = y_start
-            max_x = 1900
-
-            row_idx = 0
-            for key, value in process_dict.items():
-
-                image_jet = cv2.applyColorMap(
-                    np.uint8(value / np.amax(value) * 255),
-                    cv2.COLORMAP_JET)
-                vis_utils.cv2_show_image(
-                    key, image_jet,
-                    img_size, (img_x, img_y))
-
-                img_x += x_offset + x_padding
-                if (img_x + x_offset + x_padding) > max_x:
-                    img_x = x_start
-                    row_idx += 1
-                img_y = y_start + row_idx * (y_offset + y_padding)
-
-                # Save process images
-                cv2.imwrite('process/' + key + '.png', image_jet)
-
-            cv2.waitKey()
-
-        # Save depth images to disk
-        if save_depth_maps:
-            # Save depth map to a uint16 png (same format as disparity maps)
-            if dataset == "kitti":
-                file_path = depth_image_path.replace('velodyne_raw', 'ip_complete')
-            else:
-                file_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
-
-            if not os.path.exists(os.path.dirname(file_path)):
-                os.makedirs(os.path.dirname(file_path))
-
-            with open(file_path, 'wb') as f:
-                depth_image = (final_depths * 256).astype(np.uint16)
-
-                # pypng is used because cv2 cannot save uint16 format images
-                writer = png.Writer(width=depth_image.shape[1],
-                                    height=depth_image.shape[0],
-                                    bitdepth=16,
-                                    greyscale=True)
-                writer.write(f, depth_image)
-
+        # Process the image
+        depth_image_path = images_to_use[i]
+        start_fill_time, end_fill_time = complete_image(depth_image_path, output_depth_path,
+                                                        fill_type, extrapolate, blur_type,
+                                                        save_output, subsample, dataset)
         end_total_time = time.time()
 
         # Update fill times
@@ -201,17 +89,94 @@ def main(input_depth_dir, output_depth_dir, mode="gaussian", save_output=True, s
         last_total_times[-1] = end_total_time - start_total_time
 
 
+def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrapolate=True,
+        blur_type='gaussian', save_output=True, subsample=0.05, dataset="cityscapes"):
+
+    # Load depth projections from uint16 image
+    if dataset == "cityscapes":
+        projected_depths = cityscapes_disparity_to_depth(depth_image_path)
+    elif dataset == "kitti":
+        projected_depths = kitti_depth_read(depth_image_path)
+    else:
+        depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
+        projected_depths = np.float32(depth_image / 256.0)
+
+    # Simulate sparse depth
+    if subsample < 1.0:
+        n = int(projected_depths.shape[0] * projected_depths.shape[1])
+        index = np.random.choice(n, int(np.floor(n * subsample)), replace=False)
+        projected_depths.flat[index] = 0
+
+    # Fill in
+    start_fill_time = time.time()
+    if fill_type == 'fast':
+        final_depths = depth_map_utils.fill_in_fast(
+            projected_depths, extrapolate=extrapolate, blur_type=blur_type)
+    elif fill_type == 'multiscale':
+        final_depths, process_dict = depth_map_utils.fill_in_multiscale(
+            projected_depths, extrapolate=extrapolate, blur_type=blur_type,
+            show_process=False)
+    else:
+        raise ValueError('Invalid fill_type {}'.format(fill_type))
+    end_fill_time = time.time()
+
+    # Save depth images to disk
+    if save_output:
+        if not os.path.exists(os.path.dirname(output_depth_path)):
+            os.makedirs(os.path.dirname(output_depth_path))
+
+        with open(output_depth_path, 'wb') as f:
+            depth_image = (final_depths * 256).astype(np.uint16)
+
+            # pypng is used because cv2 cannot save uint16 format images
+            writer = png.Writer(width=depth_image.shape[1],
+                                height=depth_image.shape[0],
+                                bitdepth=16,
+                                greyscale=True)
+            writer.write(f, depth_image)
+
+    return start_fill_time, end_fill_time
+
 if __name__ == "__main__":
-    import argparse
+    opt = input('This script can process: \n\t (1) all images in a directory or \n\t (2) a single image. \n'
+          'Enter an option: ')
+    if opt != '1' and opt != '2':
+        print('Valid options are 1 or 2. User choose {}. Exiting program.'.format(opt))
+        exit(1)
 
-    parser = argparse.ArgumentParser(description="""
-        Depth completion for all sparse depth images in directory. 
-        """)
-    parser.add_argument("input_dir", help="Path to sparse depth images")
-    parser.add_argument("output_dir", help="Path to output dir")
-    parser.add_argument("mode", help="Upsampling mode: (gaussian, fast_bilateral, multiscale_bilateral)", default="fast_bilateral")
-    parser.add_argument("--dataset", default='cityscapes', required=False,
-                        help="Name of dataset being processed [cityscapes, kitti, ...]")
-    args = parser.parse_args()
+    mode = input('Choose a mode: (1) gaussian (default), (2) fast_bilateral, (3) multiscale_bilateral')
+    # Fast fill with Gaussian blur @90Hz (paper result)
+    if mode in ["gaussian", '1', '']:
+        fill_type = 'fast'
+        extrapolate = True
+        blur_type = 'gaussian'
 
-    main(args.input_dir, args.output_dir, args.mode, dataset=args.dataset)
+    # Fast Fill with bilateral blur, no extrapolation @87Hz (recommended)
+    elif mode in ["fast_bilateral", '2']:
+        fill_type = 'fast'
+        extrapolate = False
+        blur_type = 'bilateral'
+
+    # Multi-scale dilations with extra noise removal, no extrapolation @ 30Hz
+    elif mode in ["multiscale_bilateral", '3']:
+        fill_type = 'multiscale'
+        extrapolate = False
+        blur_type = 'bilateral'
+
+    else:
+        raise ValueError("Mode not implemented: " + mode)
+
+    dataset = input('Choose a dataset: (1) kitti, (2) cityscapes (default)')
+    if dataset in ['kitti', '1']:
+        dataset = 'kitti'
+    elif dataset in ['cityscapes', '2', '']:
+        dataset = 'cityscapes'
+
+    if opt == '1':
+        input_dir = input('Enter the input directory')
+        output_dir = input('Enter the output directory')
+        main(input_dir, output_dir, mode, dataset=dataset)
+    elif opt == '2':
+        in_file = input('Enter the input image path')
+        out_file = input('Enter the output image path')
+        complete_image(in_file, out_file, dataset=dataset)
