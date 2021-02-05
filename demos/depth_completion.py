@@ -177,8 +177,8 @@ if __name__ == "__main__":
     if opt == '1':
         input_dir = input('Enter the input directory\n')
         output_dir = input('Enter the output directory\n')
-        main(input_dir, output_dir, mode, dataset=dataset)
+        main(input_dir, output_dir, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate, blur_type=blur_type)
     elif opt == '2':
         in_file = input('Enter the input image path\n')
         out_file = input('Enter the output image path\n')
-        complete_image(in_file, out_file, dataset=dataset)
+        complete_image(in_file, out_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate, blur_type=blur_type)
