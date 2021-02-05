@@ -70,6 +70,8 @@ def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
 
         if dataset == "kitti":
             output_depth_path = depth_image_path.replace('velodyne_raw', 'ip_complete')
+        elif dataset == "cityscapes":
+            output_depth_path = depth_image_path.replace('disparity', 'completed_depth')
         else:
             output_depth_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
 
@@ -144,7 +146,7 @@ if __name__ == "__main__":
         print('Valid options are 1 or 2. User choose {}. Exiting program.'.format(opt))
         exit(1)
 
-    mode = input('Choose a mode: (1) gaussian (default), (2) fast_bilateral, (3) multiscale_bilateral')
+    mode = input('Choose a mode: (1) gaussian (default), (2) fast_bilateral, (3) multiscale_bilateral\n')
     # Fast fill with Gaussian blur @90Hz (paper result)
     if mode in ["gaussian", '1', '']:
         fill_type = 'fast'
@@ -166,17 +168,17 @@ if __name__ == "__main__":
     else:
         raise ValueError("Mode not implemented: " + mode)
 
-    dataset = input('Choose a dataset: (1) kitti, (2) cityscapes (default)')
+    dataset = input('Choose a dataset: (1) kitti, (2) cityscapes (default)\n')
     if dataset in ['kitti', '1']:
         dataset = 'kitti'
     elif dataset in ['cityscapes', '2', '']:
         dataset = 'cityscapes'
 
     if opt == '1':
-        input_dir = input('Enter the input directory')
-        output_dir = input('Enter the output directory')
+        input_dir = input('Enter the input directory\n')
+        output_dir = input('Enter the output directory\n')
         main(input_dir, output_dir, mode, dataset=dataset)
     elif opt == '2':
-        in_file = input('Enter the input image path')
-        out_file = input('Enter the output image path')
+        in_file = input('Enter the input image path\n')
+        out_file = input('Enter the output image path\n')
         complete_image(in_file, out_file, dataset=dataset)
