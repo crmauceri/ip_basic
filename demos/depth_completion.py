@@ -109,7 +109,7 @@ def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrap
     elif dataset == "kitti":
         projected_depths = kitti_depth_read(depth_image_path)
     elif dataset == "sunrgbd":
-        projected_depths = sunrgbd_depth_read()
+        projected_depths = sunrgbd_depth_read(depth_image_path)
     else:
         depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
         projected_depths = np.float32(depth_image / 256.0)
