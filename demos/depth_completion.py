@@ -7,7 +7,7 @@ import cv2, png
 import numpy as np
 
 from ip_basic import depth_map_utils
-from ip_basic.depth_loader import cityscapes_disparity_to_depth, kitti_depth_read
+from ip_basic.depth_loader import cityscapes_disparity_to_depth, kitti_depth_read, sunrgbd_depth_read
 
 def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
         blur_type='gaussian', save_output=True, subsample=0.05, dataset="cityscapes"):
@@ -29,6 +29,10 @@ def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
         images_to_use = sorted(glob.glob(input_depth_dir + '/*/*/*.png'))
     elif dataset == "kitti":
         images_to_use = sorted(glob.glob(input_depth_dir +'/*/*/proj_depth/velodyne_raw/image_*/*.png'))
+    elif dataset == "sunrgbd":
+        images_to_use = glob.glob(input_depth_dir + '/*/*/*/depth/*.png')
+        images_to_use.extend(glob.glob(input_depth_dir + '/*/*/*/*/*/depth/*.png'))
+        images_to_use.sort()
     else:
         images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
     print("{} images found".format(len(images_to_use)))
@@ -38,11 +42,14 @@ def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
         if dataset == "kitti":
             finished_images = [x.replace('velodyne_raw', 'ip_complete') for x in images_to_use if
                                os.path.exists(x.replace('velodyne_raw', 'ip_complete'))]
+        elif dataset == "sunrgbd":
+            finished_images = [x.replace('depth', 'ip_complete') for x in images_to_use if
+                               os.path.exists(x.replace('depth', 'ip_complete'))]
         else:
+            print('Output dir:', output_depth_dir)
             finished_images = [x for x in images_to_use if
                                os.path.exists(x.replace(input_depth_dir, output_depth_dir))]
         images_to_use = list(set(images_to_use).difference(finished_images))
-        print('Output dir:', output_depth_dir)
         print("{} unprocessed images".format(len(images_to_use)))
 
     # Rolling average array of times for time estimation
@@ -71,6 +78,8 @@ def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
         depth_image_path = images_to_use[i]
         if dataset == "kitti":
             output_depth_path = depth_image_path.replace('velodyne_raw', 'ip_complete')
+        elif dataset == "sunrgbd":
+            output_depth_path = depth_image_path.replace('depth', 'ip_complete')
         elif dataset == "cityscapes":
             output_depth_path = depth_image_path.replace('disparity', 'completed_depth')
         else:
@@ -99,6 +108,8 @@ def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrap
         projected_depths = cityscapes_disparity_to_depth(depth_image_path)
     elif dataset == "kitti":
         projected_depths = kitti_depth_read(depth_image_path)
+    elif dataset == "sunrgbd":
+        projected_depths = sunrgbd_depth_read()
     else:
         depth_image = cv2.imread(depth_image_path, cv2.IMREAD_ANYDEPTH)
         projected_depths = np.float32(depth_image / 256.0)
@@ -140,10 +151,10 @@ def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrap
     return start_fill_time, end_fill_time
 
 if __name__ == "__main__":
-    opt = input('This script can process: \n\t (1) all images in a directory or \n\t (2) a single image. \n'
+    opt = input('This script can process: \n\t (1) all images in a directory or \n\t (2) a single image. or \n\t (3) a list of files in a test file\n'
           'Enter an option: ')
-    if opt != '1' and opt != '2':
-        print('Valid options are 1 or 2. User choose {}. Exiting program.'.format(opt))
+    if opt != '1' and opt != '2': # and opt != 3:
+        print('Valid options are 1, or 2. User choose {}. Exiting program.'.format(opt))
         exit(1)
 
     mode = input('Choose a mode: (1) gaussian (default), (2) fast_bilateral, (3) multiscale_bilateral\n')
@@ -168,11 +179,13 @@ if __name__ == "__main__":
     else:
         raise ValueError("Mode not implemented: " + mode)
 
-    dataset = input('Choose a dataset: (1) kitti, (2) cityscapes (default)\n')
+    dataset = input('Choose a dataset: (1) kitti, (2) cityscapes (default), (3) sunrgbd\n')
     if dataset in ['kitti', '1']:
         dataset = 'kitti'
     elif dataset in ['cityscapes', '2', '']:
         dataset = 'cityscapes'
+    elif dataset in ['sunrgbd', '3']:
+        dataset = 'sunrgbd'
 
     if opt == '1':
         input_dir = input('Enter the input directory\n')
@@ -182,3 +195,7 @@ if __name__ == "__main__":
         in_file = input('Enter the input image path\n')
         out_file = input('Enter the output image path\n')
         complete_image(in_file, out_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate, blur_type=blur_type)
+    # elif opt == '3':
+    #     in_file = input('Enter the image list text file path\n')
+    #     complete_image(textfile=in_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate,
+    #                    blur_type=blur_type)

@@ -28,3 +28,13 @@ def kitti_depth_read(filename):
     depth[depth_png == 0] = 0
     depth_arr = depth.astype(np.uint8)
     return depth_arr
+
+def sunrgbd_depth_read(filename):
+    _depth_arr = np.asarray(Image.open(filename), dtype='uint16')
+    # Conversion from SUNRGBD Toolbox readData/read3dPoints.m
+    _depth_arr = np.bitwise_or(np.right_shift(_depth_arr, 3), np.left_shift(_depth_arr, 16 - 3))
+    _depth_arr = np.asarray(_depth_arr, dtype='float') / 1000.0
+    _depth_arr[_depth_arr > 8] = 8
+    _depth_arr = _depth_arr / 8. * 255.
+    _depth_arr = _depth_arr.astype(np.uint8)
+    return _depth_arr
