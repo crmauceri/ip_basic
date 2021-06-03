@@ -1,13 +1,13 @@
 # Image Processing for Basic Depth Completion (IP-Basic)
 
-This fork of [ip_basic]() adds 
+This fork of [ip_basic](https://github.com/kujason/ip_basic) adds 
 
 - A python package of the ip_basic code
 - Support for a number of datasets to the demos/depth_completion.py script including 
     - Cityscapes
     - KITTI 
     - SUNRGBD
-- A ROS node which can be used in combination with [lidar2depth](crmauceri/lidar2depth)
+- A ROS node which can be used in combination with [lidar2depth](https://github.com/crmauceri/lidar2depth)
 
 If you use this code, please cite the original author's paper:
 [In Defense of Classical Image Processing: Fast Depth Completion on the CPU](https://arxiv.org/abs/1802.00036)
@@ -23,13 +23,13 @@ If you use this code, please cite the original author's paper:
 }
 ```
 
-For more details on the algorithm, see the paper or the [ip_basic readme]().
+For more details on the algorithm, see the paper or the [ip_basic readme](https://github.com/kujason/ip_basic/README.md).
 
 The rest of this readme is specific to this fork
 
 ## Setup and Installation
 
-This fork has been tested with [ROS Melodic]() and Python 2.7 on a machine running Ubuntu 18.1
+This fork has been tested with [ROS Melodic](https://wiki.ros.org/melodic) and Python 2.7 on a machine running Ubuntu 18.1
 
 1. Install python dependancies. There is a requirements.txt that you can run with 
 
