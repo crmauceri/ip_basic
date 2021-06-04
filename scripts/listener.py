@@ -52,8 +52,8 @@ class Listener:
 
 
 def main(args):
-    l = Listener()
     rospy.init_node('listener', anonymous=True)
+    l = Listener()
     try:
         rospy.spin()
     except KeyboardInterrupt:
