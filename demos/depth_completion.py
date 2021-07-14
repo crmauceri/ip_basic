@@ -204,5 +204,5 @@ if __name__ == "__main__":
         complete_image(in_file, out_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate, blur_type=blur_type)
     elif opt == '3':
         in_file = input('Enter the image list text file path\n')
-        complete_image(textfile=in_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate,
+        main(textfile=in_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate,
                        blur_type=blur_type)
