@@ -9,7 +9,7 @@ import numpy as np
 from ip_basic import depth_map_utils
 from ip_basic.depth_loader import cityscapes_disparity_to_depth, kitti_depth_read, sunrgbd_depth_read
 
-def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
+def main(input_depth_dir=None, output_depth_dir=None, textfile=None, fill_type='fast', extrapolate=True,
         blur_type='gaussian', save_output=True, subsample=0.05, dataset="cityscapes"):
     """Depth maps are saved to the 'output_depth_dir' folder.
     """
@@ -22,20 +22,27 @@ def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
     ##############################
     # Processing
     ##############################
-
-    # Get images in sorted order
-    print("Input dir: " + input_depth_dir)
-    if dataset == "cityscapes":
-        images_to_use = sorted(glob.glob(input_depth_dir + '/*/*/*.png'))
-    elif dataset == "kitti":
-        images_to_use = sorted(glob.glob(input_depth_dir +'/*/*/proj_depth/velodyne_raw/image_*/*.png'))
-    elif dataset == "sunrgbd":
-        images_to_use = glob.glob(input_depth_dir + '/*/*/*/depth/*.png')
-        images_to_use.extend(glob.glob(input_depth_dir + '/*/*/*/*/*/depth/*.png'))
-        images_to_use.sort()
+    if textfile is not None:
+        with open(textfile, 'r') as f:
+            images_to_use = [x.strip() for x in f.readlines()]
+            images_to_use.sort()
+    elif os.path.isfile(input_depth_dir):
+        images_to_use = [input_depth_dir]
     else:
-        images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
-    print("{} images found".format(len(images_to_use)))
+        # Get images in sorted order
+        print("Input dir: " + input_depth_dir)
+        if dataset == "cityscapes":
+            images_to_use = sorted(glob.glob(input_depth_dir + '/*/*/*.png'))
+        elif dataset == "kitti":
+            images_to_use = sorted(glob.glob(input_depth_dir +'/*/*/proj_depth/velodyne_raw/image_*/*.png'))
+        elif dataset == "sunrgbd":
+            images_to_use = glob.glob(input_depth_dir + '/*/*/*/depth/*.png')
+            images_to_use.extend(glob.glob(input_depth_dir + '/*/*/*/*/*/depth/*.png'))
+            images_to_use.sort()
+        else:
+            images_to_use = sorted(glob.glob(input_depth_dir + '/*.png'))
+
+    print("{} images to process".format(len(images_to_use)))
 
     # Filter already processed images
     if save_output:
@@ -101,7 +108,7 @@ def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
 
 
 def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrapolate=True,
-        blur_type='gaussian', save_output=True, subsample=0.05, dataset="cityscapes"):
+                   blur_type='gaussian', save_output=True, sample_percentage=0.05, dataset="cityscapes"):
 
     # Load depth projections from uint16 image
     if dataset == "cityscapes":
@@ -115,9 +122,9 @@ def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrap
         projected_depths = np.float32(depth_image / 256.0)
 
     # Simulate sparse depth
-    if subsample < 1.0:
+    if sample_percentage < 1.0:
         n = int(projected_depths.shape[0] * projected_depths.shape[1])
-        index = np.random.choice(n, int(np.floor(n * subsample)), replace=False)
+        index = np.random.choice(n, int(np.floor(n * sample_percentage)), replace=False)
         projected_depths.flat[index] = 0
 
     # Fill in
@@ -151,10 +158,10 @@ def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrap
     return start_fill_time, end_fill_time
 
 if __name__ == "__main__":
-    opt = input('This script can process: \n\t (1) all images in a directory or \n\t (2) a single image. or \n\t (3) a list of files in a test file\n'
+    opt = input('This script can process: \n\t (1) all images in a directory or \n\t (2) a single image. or \n\t (3) a list of files in a text file\n'
           'Enter an option: ')
-    if opt != '1' and opt != '2': # and opt != 3:
-        print('Valid options are 1, or 2. User choose {}. Exiting program.'.format(opt))
+    if opt != '1' and opt != '2' and opt != 3:
+        print('Valid options are 1, 2, or 3. User choose {}. Exiting program.'.format(opt))
         exit(1)
 
     mode = input('Choose a mode: (1) gaussian (default), (2) fast_bilateral, (3) multiscale_bilateral\n')
@@ -195,7 +202,7 @@ if __name__ == "__main__":
         in_file = input('Enter the input image path\n')
         out_file = input('Enter the output image path\n')
         complete_image(in_file, out_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate, blur_type=blur_type)
-    # elif opt == '3':
-    #     in_file = input('Enter the image list text file path\n')
-    #     complete_image(textfile=in_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate,
-    #                    blur_type=blur_type)
+    elif opt == '3':
+        in_file = input('Enter the image list text file path\n')
+        complete_image(textfile=in_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate,
+                       blur_type=blur_type)
