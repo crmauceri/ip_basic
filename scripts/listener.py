@@ -29,7 +29,7 @@ class Listener:
         try:
             cv_image = self.bridge.imgmsg_to_cv2(depth_image, "mono16")
         except CvBridgeError as e:
-            print(e)
+            rospy.loginfo(e)
             return
         projected_depths = np.float32(cv_image / 256.0)
 
@@ -46,9 +46,11 @@ class Listener:
 
         completed_image = (final_depths * 256).astype(np.uint16)
         try:
-            self.image_pub.publish(self.bridge.cv2_to_imgmsg(completed_image, "mono16"))
+            img_msg = self.bridge.cv2_to_imgmsg(completed_image, "mono16")
+            img_msg.header = depth_image.header
+            self.image_pub.publish(img_msg)
         except CvBridgeError as e:
-            print(e)
+            rospy.loginfo(e)
 
 
 def main(args):
@@ -57,7 +59,7 @@ def main(args):
     try:
         rospy.spin()
     except KeyboardInterrupt:
-        print("Shutting down")
+        rospy.loginfo("Shutting down")
 
 
 if __name__ == '__main__':
