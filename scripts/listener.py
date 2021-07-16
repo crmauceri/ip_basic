@@ -3,7 +3,7 @@ import rospy, sys
 
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge, CvBridgeError
 
 import numpy as np
 from ip_basic import depth_map_utils
