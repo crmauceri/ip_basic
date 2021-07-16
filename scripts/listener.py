@@ -11,7 +11,7 @@ from ip_basic import depth_map_utils
 
 class Listener:
 
-    def __init__(self, fill_type='fast', extrapolate=True, blur_type='gaussian'):
+    def __init__(self, fill_type='fast', extrapolate=False, blur_type='gaussian'):
         # Input
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/depth_image", Image, self.callback)
