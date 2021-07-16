@@ -100,7 +100,7 @@ def main(input_depth_dir, output_depth_dir, fill_type='fast', extrapolate=True,
         last_total_times[-1] = end_total_time - start_total_time
 
 
-def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrapolate=True,
+def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrapolate=False,
         blur_type='gaussian', save_output=True, subsample=0.05, dataset="cityscapes"):
 
     # Load depth projections from uint16 image
@@ -151,13 +151,13 @@ def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrap
     return start_fill_time, end_fill_time
 
 if __name__ == "__main__":
-    opt = input('This script can process: \n\t (1) all images in a directory or \n\t (2) a single image. or \n\t (3) a list of files in a test file\n'
+    opt = raw_input('This script can process: \n\t (1) all images in a directory or \n\t (2) a single image. or \n\t (3) a list of files in a test file\n'
           'Enter an option: ')
     if opt != '1' and opt != '2': # and opt != 3:
         print('Valid options are 1, or 2. User choose {}. Exiting program.'.format(opt))
         exit(1)
 
-    mode = input('Choose a mode: (1) gaussian (default), (2) fast_bilateral, (3) multiscale_bilateral\n')
+    mode = raw_input('Choose a mode: (1) gaussian (default), (2) fast_bilateral, (3) multiscale_bilateral\n')
     # Fast fill with Gaussian blur @90Hz (paper result)
     if mode in ["gaussian", '1', '']:
         fill_type = 'fast'
@@ -179,21 +179,23 @@ if __name__ == "__main__":
     else:
         raise ValueError("Mode not implemented: " + mode)
 
-    dataset = input('Choose a dataset: (1) kitti, (2) cityscapes (default), (3) sunrgbd\n')
+    dataset = raw_input('Choose a dataset: (1) kitti, (2) cityscapes (default), (3) sunrgbd\n')
     if dataset in ['kitti', '1']:
         dataset = 'kitti'
     elif dataset in ['cityscapes', '2', '']:
         dataset = 'cityscapes'
     elif dataset in ['sunrgbd', '3']:
         dataset = 'sunrgbd'
+    else:
+        dataset = ''
 
     if opt == '1':
-        input_dir = input('Enter the input directory\n')
-        output_dir = input('Enter the output directory\n')
+        input_dir = raw_input('Enter the input directory\n')
+        output_dir = raw_input('Enter the output directory\n')
         main(input_dir, output_dir, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate, blur_type=blur_type)
     elif opt == '2':
-        in_file = input('Enter the input image path\n')
-        out_file = input('Enter the output image path\n')
+        in_file = raw_input('Enter the input image path\n')
+        out_file = raw_input('Enter the output image path\n')
         complete_image(in_file, out_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate, blur_type=blur_type)
     # elif opt == '3':
     #     in_file = input('Enter the image list text file path\n')
