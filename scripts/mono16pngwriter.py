@@ -3,7 +3,7 @@ import rospy, sys
 
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
-import cv2, os
+import cv2, os, struct
 
 from sensor_msgs.msg import CompressedImage
 
@@ -43,14 +43,7 @@ class PngWriter:
 
         # Convert ros image to cv matrix using same encoding
         if self.compressed:
-            # remove header from raw data
-            depth_header_size = 12
-            raw_data = img_msg.data[depth_header_size:]
-            np_arr = np.fromstring(raw_data, np.uint8)
-            cv_image = cv2.imdecode(np_arr, cv2.IMREAD_ANYDEPTH)
-            if cv_image is None:
-                rospy.loginfo("Failed to load {}".format(filepath))
-                return
+            cv_image = self.compressedDepthDecode(img_msg)
         else:
             try:
                 cv_image = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='mono16')
@@ -63,6 +56,44 @@ class PngWriter:
 
         rospy.logdebug("Saved {}".format(filepath))
 
+    def compressedDepthDecode(self, img_msg):
+        # Code from https://answers.ros.org/question/249775/display-compresseddepth-image-python-cv2/
+        # 'msg' as type CompressedImage
+        depth_fmt, compr_type = img_msg.format.split(';')
+        # remove white space
+        depth_fmt = depth_fmt.strip()
+        compr_type = compr_type.strip()
+        if compr_type != "compressedDepth":
+            raise Exception("Compression type is not 'compressedDepth'."
+                            "You probably subscribed to the wrong topic.")
+
+        # remove header from raw data
+        depth_header_size = 12
+        raw_data = img_msg.data[depth_header_size:]
+
+        depth_img_raw = cv2.imdecode(np.fromstring(raw_data, np.uint8), cv2.CV_LOAD_IMAGE_UNCHANGED)
+        if depth_img_raw is None:
+            # probably wrong header size
+            raise Exception("Could not decode compressed depth image."
+                            "You may need to change 'depth_header_size'!")
+
+        if depth_fmt == "16UC1":
+            # write raw image data
+            return depth_img_raw
+        elif depth_fmt == "32FC1":
+            raw_header = img_msg.data[:depth_header_size]
+            # header: int, float, float
+            [compfmt, depthQuantA, depthQuantB] = struct.unpack('iff', raw_header)
+            depth_img_scaled = depthQuantA / (depth_img_raw.astype(np.float32) - depthQuantB)
+            # filter max values
+            depth_img_scaled[depth_img_raw == 0] = 0
+
+            # depth_img_scaled provides distance in meters as f32
+            # for storing it as png, we need to convert it to 16UC1 again (depth in mm)
+            depth_img_mm = (depth_img_scaled * 1000).astype(np.uint16)
+            return depth_img_mm
+        else:
+            raise Exception("Decoding of '" + depth_fmt + "' is not implemented!")
 
 def main(args):
     rospy.init_node('writer', anonymous=True)
