@@ -55,7 +55,7 @@ class Listener:
 
 def main(args):
     rospy.init_node('listener', anonymous=True)
-    
+
     if rospy.has_param("~fill_type"):
         fill_type = rospy.get_param("~fill_type")
     else:

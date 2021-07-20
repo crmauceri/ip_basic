@@ -50,8 +50,8 @@ def main(input_depth_dir=None, output_depth_dir=None, textfile=None, fill_type='
             finished_images = [x.replace('velodyne_raw', 'ip_complete') for x in images_to_use if
                                os.path.exists(x.replace('velodyne_raw', 'ip_complete'))]
         elif dataset == "sunrgbd":
-            finished_images = [x.replace('depth', 'ip_complete') for x in images_to_use if
-                               os.path.exists(x.replace('depth', 'ip_complete'))]
+            finished_images = [x.replace('depth', 'bilateral') for x in images_to_use if
+                               os.path.exists(x.replace('depth', 'bilateral'))]
         else:
             print('Output dir:', output_depth_dir)
             finished_images = [x for x in images_to_use if
@@ -86,7 +86,7 @@ def main(input_depth_dir=None, output_depth_dir=None, textfile=None, fill_type='
         if dataset == "kitti":
             output_depth_path = depth_image_path.replace('velodyne_raw', 'ip_complete')
         elif dataset == "sunrgbd":
-            output_depth_path = depth_image_path.replace('depth', 'ip_complete')
+            output_depth_path = depth_image_path.replace('depth', 'bilateral')
         elif dataset == "cityscapes":
             output_depth_path = depth_image_path.replace('disparity', 'completed_depth')
         else:
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     # Fast fill with Gaussian blur @90Hz (paper result)
     if mode in ["gaussian", '1', '']:
         fill_type = 'fast'
-        extrapolate = True
+        extrapolate = False
         blur_type = 'gaussian'
 
     # Fast Fill with bilateral blur, no extrapolation @87Hz (recommended)
