@@ -54,21 +54,22 @@ class Listener:
 
 
 def main(args):
+    rospy.init_node('listener', anonymous=True)
+    
     if rospy.has_param("~fill_type"):
-        fill_type = rospy.get_param("~compressed")
+        fill_type = rospy.get_param("~fill_type")
     else:
         fill_type = 'fast'
     if rospy.has_param("~extrapolate"):
-        extrapolate = rospy.get_param("~compressed")
+        extrapolate = rospy.get_param("~extrapolate")
     else:
         extrapolate = False
     if rospy.has_param("~blur_type"):
-        blur_type = rospy.get_param("~compressed")
+        blur_type = rospy.get_param("~blur_type")
     else:
         blur_type = 'gaussian'
     rospy.loginfo('Starting IP-Basic Node with fill type={}, extrapolate={}, blur_type={}'.format(fill_type, extrapolate, blur_type))
 
-    rospy.init_node('listener', anonymous=True)
     l = Listener(fill_type, extrapolate, blur_type)
     try:
         rospy.spin()
