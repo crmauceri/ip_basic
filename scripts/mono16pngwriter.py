@@ -71,7 +71,7 @@ class PngWriter:
         depth_header_size = 12
         raw_data = img_msg.data[depth_header_size:]
 
-        depth_img_raw = cv2.imdecode(np.fromstring(raw_data, np.uint8), cv2.CV_LOAD_IMAGE_UNCHANGED)
+        depth_img_raw = cv2.imdecode(np.fromstring(raw_data, np.uint8), cv2.IMREAD_UNCHANGED)
         if depth_img_raw is None:
             # probably wrong header size
             raise Exception("Could not decode compressed depth image."
