@@ -48,10 +48,10 @@ def main(input_depth_dir=None, output_depth_dir=None, textfile=None, fill_type='
     if save_output:
         if dataset == "kitti":
             finished_images = [x.replace('velodyne_raw', 'ip_complete') for x in images_to_use if
-                               os.path.exists(x.replace('velodyne_raw', 'ip_complete'))]
+                               os.path.exists(x.replace('velodyne_raw', output_depth_dir))]
         elif dataset == "sunrgbd":
             finished_images = [x.replace('depth', 'bilateral') for x in images_to_use if
-                               os.path.exists(x.replace('depth', 'bilateral'))]
+                               os.path.exists(x.replace('depth', output_depth_dir))]
         else:
             print('Output dir:', output_depth_dir)
             finished_images = [x for x in images_to_use if
@@ -84,11 +84,11 @@ def main(input_depth_dir=None, output_depth_dir=None, textfile=None, fill_type='
 
         depth_image_path = images_to_use[i]
         if dataset == "kitti":
-            output_depth_path = depth_image_path.replace('velodyne_raw', 'ip_complete')
+            output_depth_path = depth_image_path.replace('velodyne_raw', output_depth_dir)
         elif dataset == "sunrgbd":
-            output_depth_path = depth_image_path.replace('depth', 'bilateral')
+            output_depth_path = depth_image_path.replace('depth', output_depth_dir)
         elif dataset == "cityscapes":
-            output_depth_path = depth_image_path.replace('disparity', 'completed_depth')
+            output_depth_path = depth_image_path.replace('disparity', output_depth_dir)
         else:
             output_depth_path = depth_image_path.replace(input_depth_dir, output_depth_dir)
 
