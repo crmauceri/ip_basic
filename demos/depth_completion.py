@@ -206,6 +206,7 @@ if __name__ == "__main__":
         out_file = raw_input('Enter the output image path\n')
         complete_image(in_file, out_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate, blur_type=blur_type)
     elif opt == '3':
-        in_file = input('Enter the image list text file path\n')
-        main(textfile=in_file, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate,
+        in_file = raw_input('Enter the image list text file path\n')
+        out_file = raw_input('Enter the output image directory prefix\n')
+        main(textfile=in_file, outfile, dataset=dataset, fill_type=fill_type, extrapolate=extrapolate,
                        blur_type=blur_type)
