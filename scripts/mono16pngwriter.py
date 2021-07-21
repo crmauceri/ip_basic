@@ -46,7 +46,11 @@ class PngWriter:
             cv_image = self.compressedDepthDecode(img_msg)
         else:
             try:
-                cv_image = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='mono16')
+                if rospy.has_param("~format"):
+                    format = rospy.get_param("~format")
+                else:
+                    format = 'mono16'
+                cv_image = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding=format)
             except CvBridgeError as e:
                 print(e)
                 return

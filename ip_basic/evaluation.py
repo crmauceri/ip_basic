@@ -1,5 +1,5 @@
 import numpy as np
-import cv2, argparse, os
+import cv2, argparse, os, re
 from PIL import Image
 from ip_basic.depth_loader import cityscapes_disparity_to_depth, kitti_depth_read, sunrgbd_depth_read
 from matplotlib import pyplot as plt
@@ -23,12 +23,11 @@ def eval_dataset(pred_filelist, gt_filelist, dataset='sunrgbd', root=''):
     mae_total = 0
     mse_total = 0
 
-    gt_pred_grid = np.zeros((256, 256))
+    gt_pred_grid = np.zeros((2000, 2000))
 
     for ii, pred_file in enumerate(pred_filelist):
         # Load completed depth
         pred_depth = cv2.imread(os.path.join(root, pred_file), cv2.IMREAD_ANYDEPTH)
-        pred_depth = pred_depth/256.0
 
         # Load ground truth
         gt_file = os.path.join(root, gt_filelist[ii])
@@ -39,8 +38,10 @@ def eval_dataset(pred_filelist, gt_filelist, dataset='sunrgbd', root=''):
             gt_depth = kitti_depth_read(gt_file)
         elif dataset == "sunrgbd":
             gt_depth = sunrgbd_depth_read(gt_file)
+            pred_depth = pred_depth / 256.0
         else:
-            gt_depth = cv2.imread(gt_file, cv2.IMREAD_ANYDEPTH)
+            gt_depth = cv2.imread(gt_file, cv2.IMREAD_ANYDEPTH) / 10.0
+            pred_depth = pred_depth / 10.0
 
         mae, num_samples = MAE(pred_depth, gt_depth)
         rmse, mse, num_samples = RMSE(pred_depth, gt_depth)
@@ -66,16 +67,29 @@ if __name__ == "__main__":
                         help='path to txt file listing completed depth images')
     parser.add_argument('gt_filelist', type=str,
                         help='path to txt file listing ground truth depth images')
-    parser.add_argument('dataset', type=str,
+    parser.add_argument('--dataset', type=str, default='',
                         help='String dataset name: [cityscapes, kitti, sunrgbd]')
-    parser.add_argument('root', type=str,
+    parser.add_argument('--root', type=str, default='',
                         help='Any absolute path prefix required to locate files in filelists')
+    parser.add_argument('--find_closest', action='store_true',
+                        help='For filepaths with timestamps (rosbag extracted images), compare to closest timestamp')
     args = parser.parse_args()
 
     with open(args.pred_filelist, 'r') as f:
         pred_filelist = [s.strip() for s in f.readlines()]
     with open(args.gt_filelist, 'r') as f:
         gt_filelist = [s.strip() for s in f.readlines()]
+
+    if args.find_closest:
+        float_pattern = re.compile('\d+\.\d+')
+        pred_stamps = np.array([float(float_pattern.findall(x)[0]) for x in pred_filelist])
+        gt_stamps = np.array([float(float_pattern.findall(x)[0]) for x in gt_filelist])
+
+        closest_preds = []
+        for gt_stamp in gt_stamps:
+            index = np.argmin(np.abs(pred_stamps-gt_stamp))
+            closest_preds.append(pred_filelist[index])
+        pred_filelist = closest_preds
 
     mae, rmse, num_samples, grid = eval_dataset(pred_filelist, gt_filelist, args.dataset, args.root)
     print('MAE: {}'.format(mae))
