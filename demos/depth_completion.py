@@ -159,7 +159,7 @@ def complete_image(depth_image_path, output_depth_path, fill_type='fast', extrap
 
 if __name__ == "__main__":
 
-    opt = input('This script can process: \n\t (1) all images in a directory or \n\t (2) a single image. or \n\t (3) a list of files in a text file\n'
+    opt = raw_input('This script can process: \n\t (1) all images in a directory or \n\t (2) a single image. or \n\t (3) a list of files in a text file\n'
           'Enter an option: ')
     if opt != '1' and opt != '2' and opt != '3':
         print('Valid options are 1, 2, or 3. User choose {}. Exiting program.'.format(opt))
